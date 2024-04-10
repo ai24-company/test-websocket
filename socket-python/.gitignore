@@ -1,0 +1,11 @@
+.idea/
+database/__pycache__/
+__pycache__/*
+*/__pycache__/
+.env_settings
+__pycache__/
+core/__pycache__/
+models/__pycache__/
+routers/__pycache__/
+schemas/__pycache__/
+sql_app.db

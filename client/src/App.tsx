@@ -1,35 +1,54 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { Fragment, useEffect, useRef, useState } from 'react';
+import './App.scss';
+import { Message } from './components/message';
 
-function App() {
-  const [count, setCount] = useState(0)
-
-  return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+const openWSHandle = (event: Event) => {
+    console.log('openWSHandle', event);
 }
 
-export default App
+const messageReceived = (event: MessageEvent) => {
+    console.log('messageReceived', JSON.parse(event.data));
+}
+
+function App() {
+    const [message, setMessage] = useState('');
+    const ws = useRef<WebSocket | null>(null);
+
+    useEffect(() => {
+        ws.current = new WebSocket('ws://localhost:8000/api/chat');
+
+
+        ws.current?.addEventListener('open', openWSHandle);
+        ws.current?.addEventListener('message', messageReceived);
+
+        return () => {
+            ws.current?.removeEventListener('open', openWSHandle);
+        }
+    }, []);
+
+    const sendMessage = () => {
+        ws.current?.send(JSON.stringify({ message }));
+    }
+
+	return (
+		<Fragment>
+			<div className="chat">
+				<header className="chat-header">Chat</header>
+				<main className="chat-body">
+					<Message message="Hello World!" isMe={true}/>
+					<Message message="Hello World!" isMe={false}/>
+					<Message message="Hello World!" isMe={true}/>
+					<Message message="Hello World!" isMe={false}/>
+				</main>
+				<footer className="chat-footer">
+					<textarea className="textarea" value={message} onChange={({ target }) => setMessage(target.value)}/>
+					<button className="send-btn" type="button" onClick={sendMessage}>
+                        Send
+                    </button>
+				</footer>
+			</div>
+		</Fragment>
+	);
+}
+
+export default App;

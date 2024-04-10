@@ -1,0 +1,24 @@
+.chat-message {
+	display: flex;
+	gap: 10px;
+
+	&:not(:last-child) {
+		margin-bottom: 20px;
+	}
+
+	&.user {
+		flex-direction: row-reverse;
+	}
+
+	&.bot {}
+
+	&__separator {
+		width: 2px;
+		height: 24px;
+		background: #fff;
+	}
+
+	&__icon {}
+
+	&__message {}
+}

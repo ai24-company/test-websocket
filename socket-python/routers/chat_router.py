@@ -28,7 +28,7 @@ async def agent_astep(callback_my):
     await callback_my.on_llm_end(run_id=id_uuid)
 
 
-@router.websocket('/chat')
+@router.websocket('/chat/')
 async def websocket_endpoint(websocket: WebSocket, chat_person_id: str = None):
     await websocket.accept()
     logger.success(f"chat_person_id: {chat_person_id}")
@@ -51,7 +51,6 @@ async def websocket_endpoint(websocket: WebSocket, chat_person_id: str = None):
             resp = ChatResponse(sender="you", message="", type="end", id=str(id_uuid), type_message="message")
             await websocket.send_json(resp.dict())
 
-            logger.info(data)
             await asyncio.sleep(2)
             await agent_astep(callback_my=stream_handler)
 

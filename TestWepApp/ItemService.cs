@@ -12,7 +12,7 @@ public class ItemService
 
     public void NotifyNewItemAvailable()
     {
-        _tcs.TrySetResult(new Item($"New Item {_id++}", Random.Shared.Next(0, 500)));
+        _tcs.TrySetResult(new Item($"New Item {_id++}", Guid.NewGuid().ToString(), false));
     }
 
     public Task<Item?> WaitForNewItem()
@@ -28,4 +28,4 @@ public class ItemService
     }
 }
 
-public record Item(string Name, double Price);
+public record Item(string message, string id, bool isMe);

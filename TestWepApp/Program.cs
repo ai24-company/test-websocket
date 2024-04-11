@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Mvc;
 using System.Text;
 using System.Text.Json;
 using TestWepApp;
@@ -20,14 +21,19 @@ app.UseCors("AllowAnyOrigin");
 app.UseHttpsRedirection();
 app.UseRouting();
 
-app.MapGet("/send-text", async (HttpContext ctx, ItemService service, CancellationToken ct) =>
+app.MapPost("/send-text", async (MessageDto dto, HttpContext ctx, ItemService service, CancellationToken ct) =>
 {
     ctx.Response.Headers.Add("Content-Type", "text/event-stream");
+    ctx.Response.Headers.Add("Cache-Control", "no-cache");
+    ctx.Response.Headers.Add("Connection", "keep-alive");
     
     while (!ct.IsCancellationRequested)
     {
         var item = await service.WaitForNewItem();
         
+        await ctx.Response.WriteAsync($"your data: {dto.Message}");
+        await ctx.Response.WriteAsync($"\n\n");
+        await Task.Delay(100);
         await ctx.Response.WriteAsync($"data: ");
         await JsonSerializer.SerializeAsync(ctx.Response.Body, item);
         await ctx.Response.WriteAsync($"\n\n");
@@ -35,6 +41,17 @@ app.MapGet("/send-text", async (HttpContext ctx, ItemService service, Cancellati
             
         service.Reset();
     }
+});
+
+app.MapGet("/", async (HttpContext ctx, ItemService service, CancellationToken ct) =>
+{
+    ctx.Response.Headers.Add("Content-Type", "text/event-stream");
+    ctx.Response.Headers.Add("Cache-Control", "no-cache");
+    
+    await ctx.Response.WriteAsync($"data: ляля-тополя");
+    await ctx.Response.Body.FlushAsync();
+        
+    service.Reset();
 });
 
 app.Run();

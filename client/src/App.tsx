@@ -9,14 +9,15 @@ function App() {
 	const sendMessage = async () => {
 		const response = await fetch('http://localhost:5238/send-text', {
 			method: 'POST',
-			body: JSON.stringify(message)
+			headers: {'content-type': 'application/json'},
+			body: JSON.stringify({message})
 		});
 		const json = await response.json();
 		setMessage(json);
 	}
 
     useEffect(() => {
-	    ES.current = new EventSource('http://localhost:5006/');
+	    ES.current = new EventSource('http://localhost:5238/');
 
 		ES.current?.addEventListener('error', (event) => {
 			console.log("Error:", event);

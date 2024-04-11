@@ -1,44 +1,42 @@
 import { Fragment, useEffect, useRef, useState } from 'react';
 import './App.scss';
-import { Message } from './components/message';
-
-const openWSHandle = (event: Event) => {
-    console.log('openWSHandle', event);
-}
-
-const messageReceived = (event: MessageEvent) => {
-    console.log('messageReceived', JSON.parse(event.data));
-}
+// import { Message } from './components/message';
 
 function App() {
     const [message, setMessage] = useState('');
-    const ws = useRef<WebSocket | null>(null);
+    const ES = useRef<EventSource | null>(null);
+
+	const sendMessage = async () => {
+		const response = await fetch('http://localhost:5238/send-text', {
+			method: 'POST',
+			body: JSON.stringify(message)
+		});
+		const json = await response.json();
+		setMessage(json);
+	}
 
     useEffect(() => {
-        ws.current = new WebSocket('ws://localhost:8000/api/chat');
+	    ES.current = new EventSource('http://localhost:5006/');
 
+		ES.current?.addEventListener('error', (event) => {
+			console.log("Error:", event);
+		});
 
-        ws.current?.addEventListener('open', openWSHandle);
-        ws.current?.addEventListener('message', messageReceived);
+	    ES.current.onmessage = (event) => {
+		    const item = JSON.parse(event.data);
+		    console.log("New item received:", item);
+	    };
 
         return () => {
-            ws.current?.removeEventListener('open', openWSHandle);
+            ES.current?.close();
         }
     }, []);
-
-    const sendMessage = () => {
-        ws.current?.send(JSON.stringify({ message }));
-    }
 
 	return (
 		<Fragment>
 			<div className="chat">
 				<header className="chat-header">Chat</header>
 				<main className="chat-body">
-					<Message message="Hello World!" isMe={true}/>
-					<Message message="Hello World!" isMe={false}/>
-					<Message message="Hello World!" isMe={true}/>
-					<Message message="Hello World!" isMe={false}/>
 				</main>
 				<footer className="chat-footer">
 					<textarea className="textarea" value={message} onChange={({ target }) => setMessage(target.value)}/>

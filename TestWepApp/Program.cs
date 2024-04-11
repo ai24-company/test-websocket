@@ -44,11 +44,10 @@ app.MapGet("/", async (HttpContext ctx, ItemService service, CancellationToken c
 {
     ctx.Response.Headers.Add("Content-Type", "text/event-stream");
     ctx.Response.Headers.Add("Cache-Control", "no-cache");
-    
+
+    ctx.Response.StatusCode = StatusCodes.Status200OK;
     await JsonSerializer.SerializeAsync(ctx.Response.Body, new DataDto{Message = "dsadasdsadsadsadsadsa", Id = "12312", IsMe = false});
     await ctx.Response.Body.FlushAsync();
-        
-    service.Reset();
 });
 
 app.Run();

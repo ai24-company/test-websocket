@@ -15,7 +15,7 @@ function App() {
     const ws = useRef<WebSocket | null>(null);
 
     useEffect(() => {
-        ws.current = new WebSocket('ws://localhost:8000/api/chat');
+        ws.current = new WebSocket('ws://localhost:5007/api/chat');
 
 
         ws.current?.addEventListener('open', openWSHandle);

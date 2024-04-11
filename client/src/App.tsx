@@ -7,6 +7,7 @@ type DATA = {
 	message: string;
 	id: string;
 	isMe: boolean;
+	type: 'start' | 'stream' | 'end';
 }
 
 function App() {
@@ -22,7 +23,28 @@ function App() {
 				body: JSON.stringify({ message })
 			});
 			const json = await response.json();
-			setMessages(prevState => prevState.concat(json));
+			console.log(json);
+			const es = new EventSource('http://localhost:5238/send-text');
+			es.addEventListener('open', (event) => {
+				console.log('Open source', event);
+			});
+
+			es.addEventListener('error', (event) => {
+				console.log("Error:", event);
+			});
+
+			es.addEventListener('message', function (event) {
+				const data = JSON.parse(event.data);
+				console.log(data);
+				if (data.type === 'stream') {
+					setMessages(prevState => prevState.concat(data));
+				}
+				if (data.type === 'end') {
+					this.close();
+				}
+			});
+			console.log(json);
+	//		setMessages(prevState => prevState.concat(json));
 		} catch (error) {
 			console.log('fetch Error', error);
 		} finally {
@@ -45,9 +67,12 @@ function App() {
 
 		eventSource.current.addEventListener('message', function (event) {
 			const data = JSON.parse(event.data);
-			console.log("Message received:", data);
-			setMessages(prevState => prevState.concat(data));
-			// this.close();
+			if (data.type === 'stream') {
+				setMessages(prevState => prevState.concat(data));
+			}
+			if (data.type === 'end') {
+				this.close();
+			}
 		});
 
 		return () => {

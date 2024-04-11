@@ -1,8 +1,18 @@
-﻿namespace TestWepApp;
+﻿using System.Text.Json.Serialization;
+
+namespace TestWepApp;
 
 public class DataDto
 {
-    public string message { get; set; }
-    public string id { get; set; }
-    public bool isMe { get; set; }
+    [JsonPropertyName("message")]
+    public string Message { get; set; }
+    
+    [JsonPropertyName("id")]
+    public string Id { get; set; }
+    
+    [JsonPropertyName("isMe")]
+    public bool IsMe { get; set; }
+    
+    [JsonPropertyName("type")]
+    public string Type { get; set; }
 }

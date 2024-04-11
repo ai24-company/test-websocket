@@ -20,7 +20,7 @@ app.UseCors("AllowAnyOrigin");
 app.UseHttpsRedirection();
 app.UseRouting();
 
-app.MapGet("/", async (HttpContext ctx, ItemService service, CancellationToken ct) =>
+app.MapGet("/send-text", async (HttpContext ctx, ItemService service, CancellationToken ct) =>
 {
     ctx.Response.Headers.Add("Content-Type", "text/event-stream");
     

@@ -11,6 +11,7 @@ type DATA = {
 }
 
 function App() {
+	const [loading, setLoading] = useState(false);
 	const [messages, setMessages] = useState<DATA[]>([]);
 	const [message, setMessage] = useState('');
 	const eventSource = useRef<EventSource | null>(null);
@@ -53,26 +54,32 @@ function App() {
 	};
 
 	useEffect(() => {
-		eventSource.current = new EventSource('http://localhost:5238/');
-
-		console.log(eventSource.current);
+		setLoading(true);
+		eventSource.current = new EventSource('http://localhost:5238/create-stream');
 
 		eventSource.current.addEventListener('open', (event) => {
-			console.log('Open source', event);
+			console.log('Open Stream:', event);
 		});
 
-		eventSource.current.addEventListener('error', (event) => {
-			console.log("Error:", event);
+		eventSource.current.addEventListener('error', (error) => {
+			console.log("Error:", error);
 		});
 
 		eventSource.current.addEventListener('message', function (event) {
-			const data = JSON.parse(event.data);
-			if (data.type === 'stream') {
-				setMessages(prevState => prevState.concat(data));
-			}
-			if (data.type === 'end') {
-				this.close();
-			}
+			const data = JSON.parse(event.data) as DATA;
+			const typeMap = {
+				'start': () => {
+					setLoading(false);
+				},
+				'stream': () => {
+					setMessages(prevState => prevState.concat(data));
+				},
+				'end': () => {
+					this.close();
+				},
+			};
+
+			typeMap[data.type]?.();
 		});
 
 		return () => {
@@ -83,40 +90,10 @@ function App() {
 		}
 	}, []);
 
-	// useEffect(() => {
-	// 	const fetching = async () => {
-	// 		try {
-	// 			console.log('TRY START');
-	//
-	// 			const response = await fetch('http://localhost:5238/', {
-	// 				method: 'POST',
-	// 				// headers: { 'Content-Type': 'text/event-stream' },
-	// 				body: JSON.stringify({ 'user_id': 123 }),
-	// 			});
-	//
-	// 			if (!response.body) return;
-	//
-	// 			const reader = response.body.getReader();
-	// 			while (true) {
-	// 				const { done, value } = await reader.read();
-	// 				if (done) return;
-	// 				console.log(value)
-	//
-	// 			}
-	// 		} catch (error) {
-	// 			console.log('CATCH: ', error);
-	// 		} finally {
-	// 			console.log('FINALLY');
-	// 		}
-	// 	};
-	//
-	// 	fetching();
-	// }, []);
-
 	return (
 		<Fragment>
 			<div className="chat">
-				<header className="chat-header">Chat</header>
+				<header className="chat-header">Chat {loading ? 'Loading..': ''}</header>
 				<main className="chat-body">
 					{messages?.map((item) => (
 						<Message key={item.id} message={item.message} isMe={item.isMe}/>

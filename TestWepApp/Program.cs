@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Mvc;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Encodings.Web;
@@ -20,18 +19,22 @@ var app = builder.Build();
 
 app.UseCors("AllowAnyOrigin");
 
-app.MapGet("/", async (HttpContext ctx, CancellationToken ct) =>
+app.MapGet("/create-stream", async (HttpContext ctx, CancellationToken ct) =>
 {
     ctx.Response.Headers.Append("Content-Type", "text/event-stream");
-
-    await ctx.Response.WriteAsync("data: ");
-    await JsonSerializer.SerializeAsync(ctx.Response.Body, new DataDto { Message = "", Id = "first", IsMe = false, Type = "start"});
+    
+    var dataStart = new DataDto { Message = "", Id = "first", IsMe = false, Type = "start" };
+    var dataStream = new DataDto { Message = "Добро пожаловать в чат", Id = "first", IsMe = false, Type = "stream" };
+    var dataEnd = new DataDto { Message = "", Id = "first", IsMe = false, Type = "end" };
+        
+    await ctx.Response.WriteAsync("data:");
+    await JsonSerializer.SerializeAsync(ctx.Response.Body, dataStart);
     await ctx.Response.WriteAsync("\n\n");
-    await ctx.Response.WriteAsync("data: ");
-    await JsonSerializer.SerializeAsync(ctx.Response.Body, new DataDto { Message = "Hello!!!!!", Id = "first", IsMe = false, Type = "stream"});
+    await ctx.Response.WriteAsync("data:");
+    await JsonSerializer.SerializeAsync(ctx.Response.Body, dataStream);
     await ctx.Response.WriteAsync("\n\n");
-    await ctx.Response.WriteAsync("data: ");
-    await JsonSerializer.SerializeAsync(ctx.Response.Body, new DataDto { Message = "", Id = "first", IsMe = false, Type = "end"});
+    await ctx.Response.WriteAsync("data:");
+    await JsonSerializer.SerializeAsync(ctx.Response.Body, dataEnd);
     await ctx.Response.WriteAsync("\n\n");
     await ctx.Response.Body.FlushAsync();
 });

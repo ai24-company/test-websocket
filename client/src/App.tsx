@@ -18,14 +18,13 @@ function App() {
 
 	const sendMessage = async () => {
 		try {
-			const response = await fetch('http://localhost:5238/send-text', {
-				method: 'POST',
-				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify({ message })
+			const response = await fetch('http://localhost:5238/event-stream', {
+				method: 'GET',
+				headers: { 'content-type': 'application/json' }
 			});
 			const json = await response.json();
 			console.log(json);
-			const es = new EventSource('http://localhost:5238/send-text');
+			const es = new EventSource('http://localhost:5238/event-stream');
 			es.addEventListener('open', (event) => {
 				console.log('Open source', event);
 			});

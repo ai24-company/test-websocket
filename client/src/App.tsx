@@ -1,12 +1,13 @@
 import './App.scss';
 
 import { Fragment, useEffect, useRef, useState } from 'react';
-import { Footer } from './components/footer';
+
+import { type IncomingMessage } from './types';
 import { useActions } from './hooks/redux-hooks.ts';
 import { Messages } from './components/messages';
-import { type IncomingMessage } from './types';
+import { Footer } from './components/footer';
 
-function App() {
+export default function App() {
 	const [loading, setLoading] = useState(false);
 	const eventSource = useRef<EventSource | null>(null);
 	const { messagesReceived } = useActions();
@@ -53,5 +54,3 @@ function App() {
 		</Fragment>
 	);
 }
-
-export default App;

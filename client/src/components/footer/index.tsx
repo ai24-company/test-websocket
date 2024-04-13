@@ -25,6 +25,8 @@ export const Footer = memo(() => {
 			const data = JSON.parse(event.data) as IncomingMessage;
 			console.log('Message Received: ', data);
 			messagesReceived(data);
+
+			if (data.sender === 'bot' && data.type === 'end') this.close();
 		});
 	};
 

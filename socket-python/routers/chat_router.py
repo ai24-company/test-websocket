@@ -37,21 +37,6 @@ async def websocket_endpoint(websocket: WebSocket, chat_person_id: str = None):
 
     while True:
         try:
-            data = await websocket.receive_json()
-
-            id_uuid = uuid.uuid4()
-
-            resp = ChatResponse(sender="you", message="", type="start", id=str(id_uuid), type_message="message")
-            await websocket.send_json(resp.dict())
-
-            resp = ChatResponse(sender="you", message=data['message'], type="stream", id=str(id_uuid),
-                                type_message="message")
-            await websocket.send_json(resp.dict())
-
-            resp = ChatResponse(sender="you", message="", type="end", id=str(id_uuid), type_message="message")
-            await websocket.send_json(resp.dict())
-
-            await asyncio.sleep(2)
             await agent_astep(callback_my=stream_handler)
 
         except (WebSocketDisconnect, RuntimeError):

@@ -159,7 +159,10 @@ async IAsyncEnumerable<string> GetMessagesFromPython(string message)
             await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", default);
             break;
         }
-                
+        
+        if (income is { Type: "stream", Message: "" })
+            continue;
+        
         yield return income?.Message ?? string.Empty;
     }
 }

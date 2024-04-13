@@ -17,56 +17,52 @@ function App() {
 	const [message, setMessage] = useState('');
 	const eventSource = useRef<EventSource | null>(null);
 
-	const sendMessage = async () => {
+	const sendMessage = () => {
 		setLoading(true);
 		const url = new URL(`${import.meta.env.VITE_API_URL}/send-text`);
 		url.searchParams.set('typeChat', 'dialog');
 		url.searchParams.set('incomeMessage', message);
 
-		try {
-			const source = new EventSource(url);
-			source.addEventListener('open', (event) => {
-				console.log('Open source', event);
-			});
+		const source = new EventSource(url);
+		source.addEventListener('open', (event) => {
+			console.log('Open source', event);
+		});
 
-			source.addEventListener('error', (event) => {
-				console.log("Error:", event);
-			});
+		source.addEventListener('error', (event) => {
+			console.log('Error:', event);
+		});
 
-			source.addEventListener('message', function (event) {
-				const data = JSON.parse(event.data) as DATA;
-				console.log('Message Received: ', data);
-				const typeMap = {
-					'start': () => {
+		source.addEventListener('message', function(event) {
+			const data = JSON.parse(event.data) as DATA;
+			console.log('Message Received: ', data);
+			const typeMap = {
+				'start': () => {
+					setLoading(false);
+				},
+				'stream': () => {
+					setMessages(prevState => {
+						const existingMessageIndex = prevState.findIndex(({ id }) => id === data.id);
+
+						if (existingMessageIndex !== -1) {
+							prevState[existingMessageIndex].message += data.message;
+						} else {
+							prevState.push(data);
+						}
+
+						console.log(prevState);
+						return prevState;
+					});
+				},
+				'end': () => {
+					if (data.sender === 'bot') {
+						this.close();
 						setLoading(false);
-					},
-					'stream': () => {
-						setMessages(prevState => {
-							const existingMessageIndex = prevState.findIndex(({ id }) => id === data.id);
+					}
+				},
+			};
 
-							if (existingMessageIndex !== -1) {
-								prevState[existingMessageIndex].message += data.message;
-							} else {
-								prevState.push(data);
-							}
-
-							return prevState;
-						});
-					},
-					'end': () => {
-						if (data.sender === 'bot')
-							this.close();
-						setLoading(false);
-					},
-				};
-
-				typeMap[data.type]?.();
-			});
-		} catch (error) {
-			console.log('fetch Error', error);
-		} finally {
-			setMessage('');
-		}
+			typeMap[data.type]?.();
+		});
 	};
 
 	useEffect(() => {
@@ -82,10 +78,10 @@ function App() {
 		});
 
 		eventSource.current.addEventListener('error', (error) => {
-			console.log("Error:", error);
+			console.log('Error:', error);
 		});
 
-		eventSource.current.addEventListener('message', function (event) {
+		eventSource.current.addEventListener('message', function(event) {
 			const data = JSON.parse(event.data) as DATA;
 			console.log('Message Received: ', data);
 
@@ -97,9 +93,7 @@ function App() {
 					setMessages(prevState => prevState.concat(data));
 				},
 				'end': () => {
-					if (data.sender === 'bot') {
-						this.close();
-					}
+					this.close();
 				},
 			};
 
@@ -107,17 +101,17 @@ function App() {
 		});
 
 		return () => {
-			eventSource.current?.removeEventListener('open', function (event) {
+			eventSource.current?.removeEventListener('open', function(event) {
 				console.log('Remove Open Source', event);
 				this.close();
-			})
-		}
+			});
+		};
 	}, []);
 
 	return (
 		<Fragment>
 			<div className="chat">
-				<header className="chat-header">Chat {loading ? 'Loading..': ''}</header>
+				<header className="chat-header">Chat {loading ? 'Loading..' : ''}</header>
 				<main className="chat-body">
 					{messages?.map((item) => (
 						<Message key={item.id} message={item.message} isMe={item.sender === 'user'}/>

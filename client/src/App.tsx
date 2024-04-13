@@ -61,6 +61,7 @@ function App() {
 	useEffect(() => {
 		const url = new URL('http://localhost:5238/send-text');
 		url.searchParams.set('typeChat', 'init');
+		url.searchParams.set('incomeMessage', '');
 
 		setLoading(true);
 		eventSource.current = new EventSource(url);

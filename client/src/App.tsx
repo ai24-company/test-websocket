@@ -44,7 +44,8 @@ function App() {
 						setMessages(prevState => prevState.concat(data));
 					},
 					'end': () => {
-						this.close();
+						if (data.sender === 'bot')
+							this.close();
 						setLoading(false);
 					},
 				};
@@ -60,6 +61,7 @@ function App() {
 
 	useEffect(() => {
 		const url = new URL('http://localhost:5238/send-text');
+		url.searchParams.set('incomeMessage', '');
 		url.searchParams.set('typeChat', 'init');
 
 		setLoading(true);

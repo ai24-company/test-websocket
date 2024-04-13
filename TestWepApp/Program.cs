@@ -154,7 +154,7 @@ async IAsyncEnumerable<string> GetMessagesFromPython(string message)
 
         var receivedString = Encoding.UTF8.GetString(buffer.Array, 0, result.Count);
         var income = JsonSerializer.Deserialize<PythonMessageDto>(receivedString);
-        if (income?.Type is "end" or "error" or "info")
+        if (income?.Type is "end" or "error" or "info" && income?.Sender is not "you")
         {
             await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", default);
             break;

@@ -21,7 +21,7 @@ var app = builder.Build();
 app.UseCors("AllowAnyOrigin");
 
 var dict = new Dictionary<string, ClientWebSocket>();
-app.MapGet("/send-text", async ([FromQuery]string incomeMessage, [FromQuery]string typeChat, [FromQuery]string token, HttpContext ctx, CancellationToken ct) =>
+app.MapPost("/send-text", async ([FromBody]string incomeMessage, [FromBody]string typeChat, [FromBody]string token, HttpContext ctx, CancellationToken ct) =>
 {
     if (typeChat == "init")
     {

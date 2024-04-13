@@ -2,6 +2,7 @@
 import express, { Request, Response } from 'express';
 // @ts-ignore
 import cors from 'cors';
+import axios from 'axios';
 
 const app = express();
 
@@ -9,9 +10,17 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-app.set('port', process.env.PORT || 8000);
+app.set('port', process.env.PORT || 9000);
 
 let data: any | null = null;
+
+app.get('/', async (req: Request, res: Response) => {
+	for (let i = 0; i < 1; i++) {
+		console.log(i)
+		const result = await axios(`http://localhost:5238/send-text?incomeMessage="Hello.. World"&typeChat=dialog&token=${i}`)
+		res.status(200).send(result.data);
+	}
+});
 
 app.get('/start-stream', (req: Request, res: Response) => {
 	res.setHeader('Content-Type', 'text/event-stream');
@@ -26,7 +35,7 @@ app.get('/start-stream', (req: Request, res: Response) => {
 	});
 
 	if (data) {
-		console.log(data)
+		console.log(data);
 		res.write(`data: ${getData('start', data.id, '', true)}\n\n`);
 		res.write(`data: ${getData('stream', data.id, data.message, true)}\n\n`);
 		res.write(`data: ${getData('end', data.id, '', true)}\n\n`);

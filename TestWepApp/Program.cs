@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
-using Serilog.Events;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Encodings.Web;
@@ -17,51 +16,12 @@ builder.Services.AddCors(options =>
         .AllowAnyMethod());
 });
 
-#region Logs
-
-var logsDirectory = Path.Combine("Logs");
-if (!Directory.Exists(logsDirectory))
-{
-    Directory.CreateDirectory(logsDirectory);
-}
-Log.Logger = new LoggerConfiguration()
-    .MinimumLevel.Information()
-    .WriteTo.Console()
-    .CreateLogger();
-
-builder.Host.UseSerilog();
-
-#endregion
-
 var app = builder.Build();
 
 app.UseCors("AllowAnyOrigin");
 
-/*app.MapGet("/create-stream", async (HttpContext ctx, CancellationToken ct) =>
-{
-    ctx.Response.Headers.Append("Content-Type", "text/event-stream");
-    ctx.Response.Headers.Append("Connection", "keep-alive");
-    ctx.Response.Headers.Append("Cache-Control", "no-store");
-    ctx.Response.Headers.Append("Access-Control-Allow-Origin", "*");
-    ctx.Response.Headers.Append("X-Accel-Buffering", "no");
-    
-    var dataStart = new DataDto { Message = "", Id = "first", IsMe = false, Type = "start" };
-    var dataStream = new DataDto { Message = "Добро пожаловать в чат", Id = "first", IsMe = false, Type = "stream" };
-    var dataEnd = new DataDto { Message = "", Id = "first", IsMe = false, Type = "end" };
-        
-    await ctx.Response.WriteAsync("data:");
-    await JsonSerializer.SerializeAsync(ctx.Response.Body, dataStart);
-    await ctx.Response.WriteAsync("\n\n");
-    await ctx.Response.WriteAsync("data:");
-    await JsonSerializer.SerializeAsync(ctx.Response.Body, dataStream);
-    await ctx.Response.WriteAsync("\n\n");
-    await ctx.Response.WriteAsync("data:");
-    await JsonSerializer.SerializeAsync(ctx.Response.Body, dataEnd);
-    await ctx.Response.WriteAsync("\n\n");
-    await ctx.Response.Body.FlushAsync();
-});*/
-
-app.MapGet("/send-text", async ([FromQuery]string incomeMessage, [FromQuery]string typeChat, HttpContext ctx, CancellationToken ct) =>
+var dict = new Dictionary<string, ClientWebSocket>();
+app.MapGet("/send-text", async ([FromQuery]string incomeMessage, [FromQuery]string typeChat, [FromQuery]string token, HttpContext ctx, CancellationToken ct) =>
 {
     if (typeChat == "init")
     {
@@ -107,7 +67,7 @@ app.MapGet("/send-text", async ([FromQuery]string incomeMessage, [FromQuery]stri
             await ctx.Response.WriteAsync("data: ");
             await JsonSerializer.SerializeAsync(ctx.Response.Body, new DataDto { Message = "", Id = outputMessageId, Sender = "bot", Type = "start"});
             await ctx.Response.WriteAsync("\n\n");
-            await foreach (var message in GetMessagesFromPython(incomeMessage))
+            await foreach (var message in GetMessagesFromPython(incomeMessage, token))
             {
                 await ctx.Response.WriteAsync("data: ");
                 await JsonSerializer.SerializeAsync(ctx.Response.Body, new DataDto { Message = message, Id = outputMessageId, Sender = "bot", Type = "stream"});
@@ -126,11 +86,22 @@ app.SubscribeSSEStream("/create-stream");
 
 app.Run();
 
-async IAsyncEnumerable<string> GetMessagesFromPython(string message)
+async IAsyncEnumerable<string> GetMessagesFromPython(string message, string token)
 {
     var uri = new Uri("ws://localhost:8000/api/chat/");
-    using var ws = new ClientWebSocket();
-    await ws.ConnectAsync(uri, default);
+    ClientWebSocket ws;
+    if (dict.TryGetValue(token, out var value))
+    {
+        ws = value;
+    }
+    else
+    {
+        ws = new ClientWebSocket();
+        ws.Options.KeepAliveInterval = new TimeSpan(0, 10, 0);
+        await ws.ConnectAsync(uri, default);
+        dict.Add(token, ws);
+    }
+    
     var options = new JsonSerializerOptions
     {
         TypeInfoResolver = new DefaultJsonTypeInfoResolver(),
@@ -156,7 +127,6 @@ async IAsyncEnumerable<string> GetMessagesFromPython(string message)
         var income = JsonSerializer.Deserialize<PythonMessageDto>(receivedString);
         if (income?.Type is "end" or "error" or "info" && income?.Sender is not "you")
         {
-            await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "Closing", default);
             break;
         }
         

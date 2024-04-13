@@ -3,10 +3,12 @@ import { type IncomingMessage } from '../types';
 
 export interface StateOptions {
 	messages: IncomingMessage[];
+	isLoading: boolean;
 }
 
 const initialState: StateOptions = {
 	messages: [],
+	isLoading: false,
 };
 
 const { actions: chatActions, reducer: chatReducer } = createSlice({
@@ -39,6 +41,9 @@ const { actions: chatActions, reducer: chatReducer } = createSlice({
 		addMessage: (state, { payload }: PayloadAction<IncomingMessage>) => {
 			state.messages.push(payload);
 		},
+		toggleLoading: (state, { payload }: PayloadAction<boolean>) => {
+			state.isLoading = payload;
+		}
 	},
 });
 

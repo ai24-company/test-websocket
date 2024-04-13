@@ -4,11 +4,13 @@ import { type IncomingMessage } from '../types';
 export interface StateOptions {
 	messages: IncomingMessage[];
 	isLoading: boolean;
+	token: string;
 }
 
 const initialState: StateOptions = {
 	messages: [],
 	isLoading: false,
+	token: crypto.randomUUID()
 };
 
 const { actions: chatActions, reducer: chatReducer } = createSlice({

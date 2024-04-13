@@ -21,8 +21,13 @@ var app = builder.Build();
 app.UseCors("AllowAnyOrigin");
 
 var dict = new Dictionary<string, ClientWebSocket>();
-app.MapPost("/send-text/{incomeMessage}&{typeChat}&{token}", async (string incomeMessage, string typeChat, string token, HttpContext ctx, CancellationToken ct) =>
+
+app.MapPost("/send-text", async ([FromBody] RequestBodyParams requestBodyParams, HttpContext ctx, CancellationToken ct) =>
 {
+    var incomeMessage = requestBodyParams.IncomeMessage;
+    var typeChat = requestBodyParams.TypeChat;
+    var token = requestBodyParams.Token;
+    
     if (typeChat == "init")
     {
         ctx.Response.Headers.Append("Content-Type", "text/event-stream");
@@ -135,4 +140,11 @@ async IAsyncEnumerable<string> GetMessagesFromPython(string message, string toke
         
         yield return income?.Message ?? string.Empty;
     }
+}
+
+public class RequestBodyParams
+{
+    public string IncomeMessage { get; set; }
+    public string TypeChat { get; set; }
+    public string Token { get; set; }
 }

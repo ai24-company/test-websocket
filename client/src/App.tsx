@@ -1,69 +1,15 @@
 import './App.scss';
 
 import { Fragment, useEffect, useRef, useState } from 'react';
-import { Message } from './components/message';
-
-type DATA = {
-	message: string;
-	id: string;
-	sender: 'user' | 'bot';
-	type: 'start' | 'stream' | 'end';
-	typeChat: 'init' | 'dialog'
-}
+import { Footer } from './components/footer';
+import { useActions } from './hooks/redux-hooks.ts';
+import { Messages } from './components/messages';
+import { type IncomingMessage } from './types';
 
 function App() {
 	const [loading, setLoading] = useState(false);
-	const [messages, setMessages] = useState<DATA[]>([]);
-	const [message, setMessage] = useState('');
 	const eventSource = useRef<EventSource | null>(null);
-
-	const sendMessage = () => {
-		setLoading(true);
-		const url = new URL(`${import.meta.env.VITE_API_URL}/send-text`);
-		url.searchParams.set('typeChat', 'dialog');
-		url.searchParams.set('incomeMessage', message);
-
-		const source = new EventSource(url);
-		source.addEventListener('open', (event) => {
-			console.log('Open source', event);
-		});
-
-		source.addEventListener('error', (event) => {
-			console.log('Error:', event);
-		});
-
-		source.addEventListener('message', function(event) {
-			const data = JSON.parse(event.data) as DATA;
-			console.log('Message Received: ', data);
-			const typeMap = {
-				'start': () => {
-					setLoading(false);
-				},
-				'stream': () => {
-					setMessages(prevState => {
-						const existingMessageIndex = prevState.findIndex(({ id }) => id === data.id);
-
-						if (existingMessageIndex !== -1) {
-							prevState[existingMessageIndex].message += data.message;
-						} else {
-							prevState.push(data);
-						}
-
-						console.log(prevState);
-						return prevState;
-					});
-				},
-				'end': () => {
-					if (data.sender === 'bot') {
-						this.close();
-						setLoading(false);
-					}
-				},
-			};
-
-			typeMap[data.type]?.();
-		});
-	};
+	const { messagesReceived } = useActions();
 
 	useEffect(() => {
 		const url = new URL(`${import.meta.env.VITE_API_URL}/send-text`);
@@ -82,22 +28,11 @@ function App() {
 		});
 
 		eventSource.current.addEventListener('message', function(event) {
-			const data = JSON.parse(event.data) as DATA;
+			const data = JSON.parse(event.data) as IncomingMessage;
 			console.log('Message Received: ', data);
+			messagesReceived(data);
 
-			const typeMap = {
-				'start': () => {
-					setLoading(false);
-				},
-				'stream': () => {
-					setMessages(prevState => prevState.concat(data));
-				},
-				'end': () => {
-					this.close();
-				},
-			};
-
-			typeMap[data.type]?.();
+			if (data.type === 'end') this.close();
 		});
 
 		return () => {
@@ -112,17 +47,8 @@ function App() {
 		<Fragment>
 			<div className="chat">
 				<header className="chat-header">Chat {loading ? 'Loading..' : ''}</header>
-				<main className="chat-body">
-					{messages?.map((item) => (
-						<Message key={item.id} message={item.message} isMe={item.sender === 'user'}/>
-					))}
-				</main>
-				<footer className="chat-footer">
-					<textarea className="textarea" value={message} onChange={({ target }) => setMessage(target.value)}/>
-					<button className="send-btn" type="button" onClick={sendMessage}>
-						Send
-					</button>
-				</footer>
+				<Messages/>
+				<Footer/>
 			</div>
 		</Fragment>
 	);

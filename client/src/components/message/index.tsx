@@ -1,7 +1,8 @@
 import './message.scss';
 import cn from 'classnames';
+import { memo } from 'react';
 
-export const Message = (props: Props) => {
+export const Message = memo((props: Props) => {
 	const { message, isMe } = props;
 
 	return (
@@ -15,7 +16,7 @@ export const Message = (props: Props) => {
 			</div>
 		</div>
 	)
-}
+});
 
 interface Props {
 	isMe: boolean;

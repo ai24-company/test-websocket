@@ -6,8 +6,9 @@ import { Message } from './components/message';
 type DATA = {
 	message: string;
 	id: string;
-	isMe: boolean;
+	sender: 'user' | 'bot';
 	type: 'start' | 'stream' | 'end';
+	typeChat: 'init' | 'dialog'
 }
 
 function App() {
@@ -17,35 +18,39 @@ function App() {
 	const eventSource = useRef<EventSource | null>(null);
 
 	const sendMessage = async () => {
+		setLoading(true);
+		const url = new URL('http://localhost:5238/send-text');
+		url.searchParams.set('typeChat', 'dialog');
+		url.searchParams.set('incomeMessage', message);
+
 		try {
-			const response = await fetch('http://localhost:5238/send-text', {
-				method: 'POST',
-				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify({ message })
-			});
-			const json = await response.json();
-			console.log(json);
-			const es = new EventSource('http://localhost:5238/send-text');
-			es.addEventListener('open', (event) => {
+			const source = new EventSource(url);
+			source.addEventListener('open', (event) => {
 				console.log('Open source', event);
 			});
 
-			es.addEventListener('error', (event) => {
+			source.addEventListener('error', (event) => {
 				console.log("Error:", event);
 			});
 
-			es.addEventListener('message', function (event) {
-				const data = JSON.parse(event.data);
-				console.log(data);
-				if (data.type === 'stream') {
-					setMessages(prevState => prevState.concat(data));
-				}
-				if (data.type === 'end') {
-					this.close();
-				}
+			source.addEventListener('message', function (event) {
+				const data = JSON.parse(event.data) as DATA;
+				console.log('Message Received: ', data);
+				const typeMap = {
+					'start': () => {
+						setLoading(false);
+					},
+					'stream': () => {
+						setMessages(prevState => prevState.concat(data));
+					},
+					'end': () => {
+						this.close();
+						setLoading(false);
+					},
+				};
+
+				typeMap[data.type]?.();
 			});
-			console.log(json);
-	//		setMessages(prevState => prevState.concat(json));
 		} catch (error) {
 			console.log('fetch Error', error);
 		} finally {
@@ -54,8 +59,11 @@ function App() {
 	};
 
 	useEffect(() => {
+		const url = new URL('http://localhost:5238/send-text');
+		url.searchParams.set('typeChat', 'init');
+
 		setLoading(true);
-		eventSource.current = new EventSource('http://localhost:5238/create-stream');
+		eventSource.current = new EventSource(url);
 
 		eventSource.current.addEventListener('open', (event) => {
 			console.log('Open Stream:', event);
@@ -67,6 +75,7 @@ function App() {
 
 		eventSource.current.addEventListener('message', function (event) {
 			const data = JSON.parse(event.data) as DATA;
+			console.log('Message Received: ', data);
 			const typeMap = {
 				'start': () => {
 					setLoading(false);
@@ -96,7 +105,7 @@ function App() {
 				<header className="chat-header">Chat {loading ? 'Loading..': ''}</header>
 				<main className="chat-body">
 					{messages?.map((item) => (
-						<Message key={item.id} message={item.message} isMe={item.isMe}/>
+						<Message key={item.id} message={item.message} isMe={item.sender === 'user'}/>
 					))}
 				</main>
 				<footer className="chat-footer">

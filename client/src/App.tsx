@@ -63,7 +63,6 @@ function App() {
 		const url = new URL('http://localhost:5238/send-text');
 		url.searchParams.set('incomeMessage', '');
 		url.searchParams.set('typeChat', 'init');
-		url.searchParams.set('incomeMessage', '');
 
 		setLoading(true);
 		eventSource.current = new EventSource(url);
@@ -79,15 +78,28 @@ function App() {
 		eventSource.current.addEventListener('message', function (event) {
 			const data = JSON.parse(event.data) as DATA;
 			console.log('Message Received: ', data);
+
 			const typeMap = {
 				'start': () => {
 					setLoading(false);
 				},
 				'stream': () => {
-					setMessages(prevState => prevState.concat(data));
+					setMessages(prevState => {
+						const existingMessageIndex = prevState.findIndex(({ id }) => id === data.id);
+
+						if (existingMessageIndex !== -1) {
+							prevState[existingMessageIndex].message += data.message;
+						} else {
+							prevState.push(data);
+						}
+
+						return prevState;
+					});
 				},
 				'end': () => {
-					this.close();
+					if (data.sender === 'bot') {
+						this.close();
+					}
 				},
 			};
 

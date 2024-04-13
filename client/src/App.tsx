@@ -19,7 +19,7 @@ function App() {
 
 	const sendMessage = async () => {
 		setLoading(true);
-		const url = new URL('http://localhost:5238/send-text');
+		const url = new URL(`${import.meta.env.VITE_API_URL}/send-text`);
 		url.searchParams.set('typeChat', 'dialog');
 		url.searchParams.set('incomeMessage', message);
 
@@ -41,7 +41,17 @@ function App() {
 						setLoading(false);
 					},
 					'stream': () => {
-						setMessages(prevState => prevState.concat(data));
+						setMessages(prevState => {
+							const existingMessageIndex = prevState.findIndex(({ id }) => id === data.id);
+
+							if (existingMessageIndex !== -1) {
+								prevState[existingMessageIndex].message += data.message;
+							} else {
+								prevState.push(data);
+							}
+
+							return prevState;
+						});
 					},
 					'end': () => {
 						if (data.sender === 'bot')
@@ -60,7 +70,7 @@ function App() {
 	};
 
 	useEffect(() => {
-		const url = new URL('http://localhost:5238/send-text');
+		const url = new URL(`${import.meta.env.VITE_API_URL}/send-text`);
 		url.searchParams.set('incomeMessage', '');
 		url.searchParams.set('typeChat', 'init');
 
@@ -84,17 +94,7 @@ function App() {
 					setLoading(false);
 				},
 				'stream': () => {
-					setMessages(prevState => {
-						const existingMessageIndex = prevState.findIndex(({ id }) => id === data.id);
-
-						if (existingMessageIndex !== -1) {
-							prevState[existingMessageIndex].message += data.message;
-						} else {
-							prevState.push(data);
-						}
-
-						return prevState;
-					});
+					setMessages(prevState => prevState.concat(data));
 				},
 				'end': () => {
 					if (data.sender === 'bot') {

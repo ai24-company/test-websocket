@@ -1,21 +1,42 @@
 import { memo, useState } from 'react';
-import { fetchEventSource } from '@microsoft/fetch-event-source';
+import { EventStreamContentType, fetchEventSource } from '@microsoft/fetch-event-source';
 
-import { useActions } from '../../hooks/redux-hooks.ts';
+import { useActions, useAppSelector } from '../../hooks/redux-hooks.ts';
 import { type IncomingMessage } from '../../types';
+
+class RetriableError extends Error { }
+class FatalError extends Error { }
 
 export const Footer = memo(() => {
 	const [message, setMessage] = useState('');
-	const { messagesReceived } = useActions();
+	const token = useAppSelector(state => state.chat.token);
+	const { messagesReceived, toggleLoading } = useActions();
 
 	const sendMessage = async () => {
 		const controller = new AbortController();
-		const url = new URL(`${import.meta.env.VITE_API_URL}/send-text`);
+		const url = `${import.meta.env.VITE_API_URL}/send-text`;
 
-		url.searchParams.set('typeChat', 'dialog');
-		url.searchParams.set('incomeMessage', message);
-
-		await fetchEventSource(url.toString(), {
+		await fetchEventSource(url, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({
+				incomeMessage: message,
+				token,
+				typeChat: 'dialog'
+			}),
+			async onopen(response) {
+				if (response.ok && response.headers.get('content-type') === EventStreamContentType) {
+					toggleLoading(false);
+					return; // everything's good
+				} else if (response.status >= 400 && response.status < 500 && response.status !== 429) {
+					// client-side errors are usually non-retriable:
+					throw new FatalError();
+				} else {
+					throw new RetriableError();
+				}
+			},
 			onmessage(event) {
 				try {
 					const parsedData = JSON.parse(event.data) as IncomingMessage;

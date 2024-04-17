@@ -13,21 +13,24 @@ class FatalError extends Error { }
 
 export default function App() {
 	const isLoading = useAppSelector(state => state.chat.isLoading);
+	const token = useAppSelector(state => state.chat.token);
 	const { messagesReceived, toggleLoading } = useActions();
 
 	useEffect(() => {
+		const url = `${import.meta.env.VITE_API_URL}/send-text`;
 		const controller = new AbortController();
 		toggleLoading(true);
 
 		async function fetchInit() {
-			await fetchEventSource(`${import.meta.env.VITE_API_URL}/send-text`, {
+			await fetchEventSource(url, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
 				},
 				body: JSON.stringify({
-					typeChat: 'init',
 					incomeMessage: '',
+					token,
+					typeChat: 'init'
 				}),
 				async onopen(response) {
 					if (response.ok && response.headers.get('content-type') === EventStreamContentType) {
